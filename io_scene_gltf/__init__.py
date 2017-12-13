@@ -291,7 +291,7 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
 
         scene = root['scenes'][sceneIdx]
 
-        blendfile = "D:/pbr_node/glTF2_Principled.blend"
+        blendfile = "C:/pbr_node/glTF2_Principled.blend"
         section   = "\\NodeTree\\"
         object    = "glTF Metallic Roughness"
 
