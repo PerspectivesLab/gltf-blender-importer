@@ -27,7 +27,7 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
     filter_glob = StringProperty(
         default="*.gltf",
         options={'HIDDEN'},
-    )
+    )	
 
     def get_buffer(self, idx):
         buffer = self.root['buffers'][idx]
@@ -67,6 +67,12 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
             fmt = "<H"
         elif component_type == 5125:
             fmt = "<I"
+        elif component_type == 5121:
+            fmt = "<B"		
+        elif component_type == 5120:
+            fmt = "<c"	
+        elif component_type == 5122:
+            fmt = "<h"				
         else:
             raise ValueError("Unknown component type: %s" % component_type)
 
@@ -82,6 +88,7 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
         return result
 
     def create_texture(self, idx, name, tree):
+        print("Creating texture ", name );
         texture = self.root['textures'][idx]
         source = self.root['images'][texture['source']]
         uri = source['uri']
@@ -114,6 +121,9 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
 
         mo = tree.nodes.new('ShaderNodeOutputMaterial')
         mo.location = 0, 0
+		
+		
+		
 
         metal_mix = tree.nodes.new('ShaderNodeMixShader')
         metal_mix.location = -200, 0
@@ -147,7 +157,9 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
 
         if 'pbrMetallicRoughness' in material:
             pbrMetallicRoughness = material['pbrMetallicRoughness']
+            print("got pbrMetallicRoughness");
             if 'baseColorTexture' in pbrMetallicRoughness:
+                print("got baseColorTexture");
                 idx = pbrMetallicRoughness['baseColorTexture']['index']
                 tex = self.create_texture(idx, 'baseColorTexture', tree)
                 tex.location = -800, 50
@@ -279,6 +291,29 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
 
         scene = root['scenes'][sceneIdx]
 
+        blendfile = "D:/pbr_node/glTF2_Principled.blend"
+        section   = "\\NodeTree\\"
+        object    = "glTF Metallic Roughness"
+
+        filepath  = blendfile + section + object
+        directory = blendfile + section
+        filename  = object
+
+        bpy.ops.wm.append(
+            filepath=filepath, 
+            filename=filename,
+            directory=directory)
+			
+			
+        ddir = lambda data, filter_str: [i for i in dir(data) if i.startswith(filter_str)]
+        get_nodes = lambda cat: [i for i in getattr(bpy.types, cat).category.items(None)]
+
+        cycles_categories = ddir(bpy.types, "NODE_MT_category_SH_NEW")
+        for cat in cycles_categories: 
+            print(cat)
+            for node in get_nodes(cat):
+                print('bl_idname: {node.nodetype}, type: {node.label}'.format(node=node)) 			
+			
         [self.create_group(nodes[idx], None) for idx in scene['nodes']]
         return {'FINISHED'}
 
@@ -290,7 +325,7 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_module(__name__)
-
+	
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
 
