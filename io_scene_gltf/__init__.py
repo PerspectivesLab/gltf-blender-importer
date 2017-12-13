@@ -121,10 +121,50 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
 
         mo = tree.nodes.new('ShaderNodeOutputMaterial')
         mo.location = 0, 0
-		
-		
-		
 
+        if 'pbrMetallicRoughness' in material:
+            group_node = tree.nodes.new('ShaderNodeGroup')
+            group_node.node_tree = bpy.data.node_groups['glTF Metallic Roughness']
+            group_node.location = -200, 0
+            links.new(group_node.outputs[0], mo.inputs[0])
+            pbrMetallicRoughness = material['pbrMetallicRoughness']
+            if 'baseColorTexture' in pbrMetallicRoughness:
+                idx = pbrMetallicRoughness['baseColorTexture']['index']
+                tex = self.create_texture(idx, 'Diffuse Texture', tree)
+                tex.location = -800, 50
+                links.new(tex.outputs[0], group_node.inputs[0])
+            if 'baseColorFactor' in pbrMetallicRoughness:
+                print( pbrMetallicRoughness['baseColorFactor'] );			
+                group_node.inputs[1].default_value = pbrMetallicRoughness['baseColorFactor']
+				
+				
+            if 'roughnessFactor' in pbrMetallicRoughness:
+                print( pbrMetallicRoughness['roughnessFactor'] );			
+                group_node.inputs[4].default_value = float(pbrMetallicRoughness['roughnessFactor'])
+            if 'metallicFactor' in pbrMetallicRoughness:
+                print( pbrMetallicRoughness['metallicFactor'] );			
+                group_node.inputs[3].default_value = float(pbrMetallicRoughness['metallicFactor'])
+		
+		
+		
+        if 'occlusionTexture' in material:
+            occlusionTexture = material['occlusionTexture']
+            idx = occlusionTexture['index']
+            tex = self.create_texture(idx, 'Occlusion Texture', tree)
+            tex.location = -800, -600
+            links.new(tex.outputs[0], group_node.inputs[7])
+			
+        if 'normalTexture' in material:
+            normalTexture = material['normalTexture']
+            idx = normalTexture['index']
+            tex = self.create_texture(idx, 'Normal Texture', tree)
+            tex.location = -800, -300
+            links.new(tex.outputs[0], group_node.inputs[5])
+			
+			
+		
+        '''
+        NodeSocketColor		
         metal_mix = tree.nodes.new('ShaderNodeMixShader')
         metal_mix.location = -200, 0
 
@@ -211,6 +251,8 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
             links.new(tex.outputs[0], normal_map.inputs[1])
             for normal_input in normal_inputs:
                 links.new(normal_map.outputs[0], normal_input)
+				
+        '''		
 
         return mat
 
@@ -313,7 +355,16 @@ class ImportGLTF(bpy.types.Operator, ImportHelper):
             print(cat)
             for node in get_nodes(cat):
                 print('bl_idname: {node.nodetype}, type: {node.label}'.format(node=node)) 			
-			
+
+				
+        for group in bpy.data.groups:
+            for object in group.objects:
+                print(object.name)
+				
+        for ng in bpy.data.node_groups:
+            if ng.bl_idname == 'ShaderNodeTree':
+                print(ng)
+
         [self.create_group(nodes[idx], None) for idx in scene['nodes']]
         return {'FINISHED'}
 
